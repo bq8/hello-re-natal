@@ -2,8 +2,10 @@
   (:require [reagent.core :as r :refer [atom]]
             [re-frame.core :refer [subscribe dispatch dispatch-sync]]
             [hello-re-natal.events]
-            [hello-re-natal.subs]))
+            [hello-re-natal.subs]
+            [cljs.reader :as reader]))
 
+(def read-string reader/read-string)
 (def ReactNative (js/require "react-native"))
 
 (def app-registry (.-AppRegistry ReactNative))
@@ -19,7 +21,12 @@
 (def logo-img (js/require "./images/cljs.png"))
 
 (defn alert [title]
-      (.alert (.-Alert ReactNative) title))
+  (.alert (.-Alert ReactNative) title))
+
+(def pounds-per-kilogram 0.45359237)
+(defn to-pounds
+  [weight]
+  (* weight pounds-per-kilogram))
 
 (defn app-root []
   (let [greeting (subscribe [:get-greeting])
@@ -36,15 +43,15 @@
                        :width 80
                        :height 80
                        :margin-bottom 30}}]
-          [text-input {:style {:height 40}
-                       :on-change-text #(do
-                                         (reset! state %)
-                                         (r/flush))
-                       :value @state}]
+       [text-input {:style {:height 40}
+                    :on-change-text #(do
+                                       (reset! state %)
+                                       (r/flush))
+                    :value @state}]
        [touchable-highlight {:style {:background-color "#999"
                                      :padding 10
                                      :border-radius 5}
-                             :on-press #(alert "hello...")}
+                             :on-press #(alert (str (to-pounds 135)))}
         [text {:style {:color "white" :text-align "center" :font-weight "bold"}} "press me"]]
        [view {:style {:background-color "#000"
                       `:height 80}}]
@@ -52,8 +59,12 @@
                       `:height 80}}]
        [text {:style {:color "black"
                       :text-align "center"
-                      :font-weight "bold"}} "DOT DOT DOT"]])))
+                      :font-weight "bold"}}
+                      (if (number? (read-string @state))
+                          (str (to-pounds @state))
+                          (str "Not a number" @state (rand 10))
+                          )]])))
 
 (defn init []
-      (dispatch-sync [:initialize-db])
-      (.registerComponent app-registry "HelloReNatal" #(r/reactify-component app-root)))
+  (dispatch-sync [:initialize-db])
+  (.registerComponent app-registry "HelloReNatal" #(r/reactify-component app-root)))
