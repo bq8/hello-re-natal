@@ -30,7 +30,7 @@
 
 (defn app-root []
   (let [greeting (subscribe [:get-greeting])
-        state (atom "Hello")]
+        state (atom "")]
     (fn []
       [view {:style {:flex-direction "column"
                      :margin 40}}
@@ -44,9 +44,12 @@
                        :height 80
                        :margin-bottom 30}}]
        [text-input {:style {:height 40}
+                    :keyboard-type "numeric"
                     :on-change-text #(do
                                        (reset! state %)
                                        (r/flush))
+                    :placeholder "Weight (in pounds)"
+                    :return-key-type "done"
                     :value @state}]
        [touchable-highlight {:style {:background-color "#999"
                                      :padding 10
