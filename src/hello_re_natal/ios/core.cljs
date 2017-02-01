@@ -8,9 +8,13 @@
 
 (def app-registry (.-AppRegistry ReactNative))
 (def text (r/adapt-react-class (.-Text ReactNative)))
+(def text-input (r/adapt-react-class (.-TextInput ReactNative)))
 (def view (r/adapt-react-class (.-View ReactNative)))
 (def image (r/adapt-react-class (.-Image ReactNative)))
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
+(def pan-responder (r/adapt-react-class (.-PanResponder ReactNative)))
+(def animated (r/adapt-react-class (.-Animated ReactNative)))
+(def dimensions (r/adapt-react-class (.-Dimensions ReactNative)))
 
 (def logo-img (js/require "./images/cljs.png"))
 
@@ -18,15 +22,37 @@
       (.alert (.-Alert ReactNative) title))
 
 (defn app-root []
-  (let [greeting (subscribe [:get-greeting])]
+  (let [greeting (subscribe [:get-greeting])
+        state (atom "Hello")]
     (fn []
-      [view {:style {:flex-direction "column" :margin 40 :align-items "center"}}
-       [text {:style {:font-size 30 :font-weight "100" :margin-bottom 20 :text-align "center"}} @greeting]
+      [view {:style {:flex-direction "column"
+                     :margin 40}}
+       [text {:style {:font-size 30
+                      :font-weight "100"
+                      :margin-bottom 20
+                      :text-align "center"}} @greeting]
        [image {:source logo-img
-               :style  {:width 80 :height 80 :margin-bottom 30}}]
-       [touchable-highlight {:style {:background-color "#999" :padding 10 :border-radius 5}
-                             :on-press #(alert "HELLO!")}
-        [text {:style {:color "white" :text-align "center" :font-weight "bold"}} "press me"]]])))
+               :style {:align-self "center"
+                       :width 80
+                       :height 80
+                       :margin-bottom 30}}]
+          [text-input {:style {:height 40}
+                       :on-change-text #(do
+                                         (reset! state %)
+                                         (r/flush))
+                       :value @state}]
+       [touchable-highlight {:style {:background-color "#999"
+                                     :padding 10
+                                     :border-radius 5}
+                             :on-press #(alert "hello...")}
+        [text {:style {:color "white" :text-align "center" :font-weight "bold"}} "press me"]]
+       [view {:style {:background-color "#000"
+                      `:height 80}}]
+       [view {:style {:background-color "red"
+                      `:height 80}}]
+       [text {:style {:color "black"
+                      :text-align "center"
+                      :font-weight "bold"}} "DOT DOT DOT"]])))
 
 (defn init []
       (dispatch-sync [:initialize-db])
