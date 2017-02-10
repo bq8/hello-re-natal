@@ -17,6 +17,7 @@
 (def pan-responder (r/adapt-react-class (.-PanResponder ReactNative)))
 (def animated (r/adapt-react-class (.-Animated ReactNative)))
 (def dimensions (r/adapt-react-class (.-Dimensions ReactNative)))
+(def segmented-control (r/adapt-react-class (.-SegmentedControlIOS ReactNative)))
 
 (def logo-img (js/require "./images/cljs.png"))
 
@@ -34,7 +35,6 @@
 
 ;; Calculates the number of each disc required to reach a given weight.
 (defn baz [accum plate-weights remaining-weight]
-  (println accum plate-weights remaining-weight)
   (if (or (<= remaining-weight 0) 
           (empty? plate-weights))
     accum
@@ -57,7 +57,8 @@
 
 (defn app-root []
   (let [greeting (subscribe [:get-greeting])
-        state (atom "")]
+        state (atom "")
+        desired-units (atom 0)]
     (fn []
       [view {:style {:flex-direction "column"
                      :margin 40}}
@@ -75,9 +76,12 @@
                     :on-change-text #(do
                                        (reset! state %)
                                        (r/flush))
-                    :placeholder "Weight (in pounds)"
+                    :placeholder "Weight"
                     :return-key-type "done"
                     :value @state}]
+       [segmented-control {:on-change #(reset! desired-units (-> % .-nativeEvent .-selectedSegmentIndex))
+                           :selected-index @desired-units
+                           :values ["kg", "lbs"]}]
        [touchable-highlight {:style {:background-color "#999"
                                      :padding 10
                                      :border-radius 5}
@@ -91,7 +95,9 @@
                       :text-align "center"
                       :font-weight "bold"}}
                       (if (number? (read-string @state))
-                          (str (calc-weight @state 45 pound-plates)) ;;(str (to-pounds @state))
+                          (str (calc-weight @state 
+                                            (if (zero? @desired-units) 20 45) 
+                                            (if (zero? @desired-units) kilogram-plates pound-plates))) ;;(str (to-pounds @state))
                           (str "Not a number" @state (rand 10));;
                           )]])))
 
