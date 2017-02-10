@@ -28,6 +28,33 @@
   [weight]
   (* weight pounds-per-kilogram))
 
+(def barbell {:mens 20 :womens 15})
+(def pound-plates [45 35 25 10 5 2.5])
+(def kilogram-plates [25 20 15 10 5 2.5])
+
+;; Calculates the number of each disc required to reach a given weight.
+(defn baz [accum plate-weights remaining-weight]
+  (println accum plate-weights remaining-weight)
+  (if (or (<= remaining-weight 0) 
+          (empty? plate-weights))
+    accum
+    (recur 
+      (assoc accum (keyword (str "disc-" (first plate-weights))) (quot remaining-weight (first plate-weights)))
+      (rest plate-weights)
+      (- remaining-weight (* (first plate-weights) (quot remaining-weight (first plate-weights)))))))
+
+;; Calculates the number of discs required to reach a given weight, accounting for the bar.
+;;
+;; target-weight the total weight on the bar
+;; barbell-type 20kg or 45lbs
+;; pound-plates or kilogram-plates
+(defn calc-weight 
+  [target-weight barbell-weight weight-set]
+  (let [weight-per-side (/ (- target-weight barbell-weight) 2)]
+    (filter (fn [x]
+              (pos? (val x))) 
+            (baz {} weight-set weight-per-side))))
+
 (defn app-root []
   (let [greeting (subscribe [:get-greeting])
         state (atom "")]
@@ -64,8 +91,8 @@
                       :text-align "center"
                       :font-weight "bold"}}
                       (if (number? (read-string @state))
-                          (str (to-pounds @state))
-                          (str "Not a number" @state (rand 10))
+                          (str (calc-weight @state 45 pound-plates)) ;;(str (to-pounds @state))
+                          (str "Not a number" @state (rand 10));;
                           )]])))
 
 (defn init []
