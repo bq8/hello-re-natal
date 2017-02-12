@@ -6,24 +6,12 @@
             [cljs.reader :as reader]
             [hello-re-natal.ios.styles :as s]))
 
-(def read-string reader/read-string)
 (def ReactNative (js/require "react-native"))
-
 (def app-registry (.-AppRegistry ReactNative))
 (def text (r/adapt-react-class (.-Text ReactNative)))
 (def text-input (r/adapt-react-class (.-TextInput ReactNative)))
 (def view (r/adapt-react-class (.-View ReactNative)))
-(def image (r/adapt-react-class (.-Image ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-(def pan-responder (r/adapt-react-class (.-PanResponder ReactNative)))
-(def animated (r/adapt-react-class (.-Animated ReactNative)))
-(def dimensions (r/adapt-react-class (.-Dimensions ReactNative)))
 (def segmented-control (r/adapt-react-class (.-SegmentedControlIOS ReactNative)))
-
-(def logo-img (js/require "./images/cljs.png"))
-
-(defn alert [title]
-  (.alert (.-Alert ReactNative) title))
 
 (def pounds-per-kilogram 0.45359237)
 (defn to-pounds
@@ -33,11 +21,12 @@
   [weight]
   (* weight pounds-per-kilogram))
 
-(def barbell {:mens 20 :womens 15})
-(def pound-plates [45 35 25 10 5 2.5])
-(def kilogram-plates [25 20 15 10 5 2.5])
+(defrecord Barbell [weight display-string])
+(def barbells [(Barbell. 20 "Mens 20kg/44lb Olympic") (Barbell. 15 "Womens 15kg/33lb Olympic")])
 
-;; Calculates the number of each disc required to reach a given weight.
+(defrecord Disc-Set [discs unit display-string])
+(def discs [(Disc-Set. [25 20 15 10 5 2.5] "kg" "Kilograms") (Disc-Set. [45 35 25 10 5 2.5] "lb" "Pounds")])
+
 (defn baz [accum plate-weights remaining-weight]
   (if (or (<= remaining-weight 0) 
           (empty? plate-weights))
@@ -47,70 +36,64 @@
       (rest plate-weights)
       (- remaining-weight (* (first plate-weights) (quot remaining-weight (first plate-weights)))))))
 
-;; Calculates the number of discs required to reach a given weight, accounting for the bar.
-;;
-;; target-weight the total weight on the bar. units should correspond to those used in weight-set
-;; barbell-type 20kg or 45lbs
-;; pound-plates or kilogram-plates
-(defn calc-weight [target-weight target-weight-unit barbell-type disc-unit]
+(defn calc-weight 
+  [target-weight target-weight-unit barbell-weight disc-unit disc-set]
   (let [target-weight (cond
                         (= target-weight-unit disc-unit) target-weight
                         (zero? disc-unit) (to-kilos target-weight)
                         :else (to-pounds target-weight))
-        barbell-weight (cond 
-                         (zero? disc-unit) (barbell (keyword barbell-type))
-                         :else (to-pounds (barbell (keyword barbell-type))))
-        weight-per-side (/ (- target-weight barbell-weight) 2)
-        weight-set (cond
-                     (zero? disc-unit) kilogram-plates
-                     :else pound-plates)]
-    (println target-weight barbell-weight weight-per-side weight-set)
+        weight-per-side (/ (- target-weight barbell-weight) 2)]
     (filter (fn [x]
               (pos? (val x))) 
-            (baz {} weight-set weight-per-side))))
+            (baz {} disc-set weight-per-side))))
 
 (defn app-root []
   (let [text-input-state (atom "")
         target-weight-state (atom 0)
-        target-weight-unit (atom 0)
-        barbell-type (atom 0)
-        disc-unit (atom 0)]
+        target-weight-unit-state (atom 0)
+        barbell-type-state (atom 0)
+        disc-unit-state (atom 0)]
     (fn []
       [view {:style (get-in s/styles [:root-view])}
-       [text {:style (get-in s/styles [:text-label])} "How much weight do you want to lift?"]
-       [text-input {:style (get-in s/styles [:text-input])
+       [text {:style (get-in s/styles [:text-label :style])} "How much weight do you want to lift?"]
+       [text-input {:style (get-in s/styles [:text-input :style])
                     :keyboard-type "numeric"
                     :on-change-text #(do
                                        (reset! text-input-state %)
                                        (reset! target-weight-state 
-                                               (if (number? (read-string @text-input-state))
+                                               (if (number? (reader/read-string @text-input-state))
                                                  @text-input-state
                                                  nil))
                                        (r/flush))
                     :placeholder "Weight"
                     :return-key-type "done"
                     :value @text-input-state}]
-       [segmented-control {:on-change #(do 
-                                         (reset! target-weight-unit (-> % .-nativeEvent .-selectedSegmentIndex)))
-                           :selected-index @target-weight-unit
+       [segmented-control {:on-change #(reset! target-weight-unit-state (-> % .-nativeEvent .-selectedSegmentIndex))
+                           :selected-index @target-weight-unit-state
+                           :style (get-in s/styles [:segmented-control :style])
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
                            :values ["kg", "lbs"]}]
-       [text {:style (get-in s/styles [:text-label])} "What kind of bar do you have?"]
-       [segmented-control {:selected-index @barbell-type
+       [text {:style (get-in s/styles [:text-label :style])} "What kind of bar do you have?"]
+       [segmented-control {:on-change #(reset! barbell-type-state (-> % .-nativeEvent .-selectedSegmentIndex))
+                           :selected-index @barbell-type-state
+                           :style (get-in s/styles [:segmented-control :style])
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
-                           :values ["Mens 20kg/44lb Olympic", "Womens 15kg/33lb Olympic"]}]
-       [text {:style (get-in s/styles [:text-label])} "What kind of weights will you be using?"]
-       [segmented-control {:on-change #(reset! disc-unit (-> % .-nativeEvent .-selectedSegmentIndex))
-                           :selected-index @disc-unit
+                           :values (map #(:display-string %) barbells)}]
+       [text {:style (get-in s/styles [:text-label :style])} "What kind of weights will you be using?"]
+       [segmented-control {:on-change #(reset! disc-unit-state (-> % .-nativeEvent .-selectedSegmentIndex))
+                           :selected-index @disc-unit-state
+                           :style (get-in s/styles [:segmented-control :style])
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
-                           :values ["kilogram discs", "pound discs"]}]
-       [text {:style {:color "black"
-                      :text-align "center"
-                      :font-weight "bold"}} 
-                      (if (number? (read-string @text-input-state))
-                        (str (calc-weight @target-weight-state @target-weight-unit "mens" @disc-unit))
-                          (str "Not a number: " @text-input-state @target-weight-state)
-                          )]])))
+                           :values (map #(:display-string %) discs)}]
+       [text {:style (get-in s/styles [:text-output])} 
+        (if (number? (reader/read-string @text-input-state)) 
+          (str (calc-weight 
+                 @target-weight-state 
+                 @target-weight-unit-state 
+                 (cond-> (:weight (barbells @barbell-type-state)) (pos? @disc-unit-state) to-pounds)
+                 @disc-unit-state 
+                 (:discs (discs @disc-unit-state)))) 
+          (str "Not a number: " @text-input-state @target-weight-state))]])))
 
 (defn init []
   (dispatch-sync [:initialize-db])

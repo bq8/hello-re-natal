@@ -2,7 +2,7 @@
 
 (def styles
   
-  {:root-view {:background-color "#2176ae"
+  {:root-view {:background-color "#E3F2FD"
                :flex-direction "column"
                :padding 40
                :position "absolute"
@@ -10,7 +10,12 @@
                :left     0
                :bottom   0
                :right    0}
-   :segmented-control {:tint-color "#fbb13c"}
-   :text-input {:height 40
-                :color "#ff729f"}
-   :text-label {:color "#fe6847"}})
+   :segmented-control {:style {:margin-top 5}
+                       :tint-color "#DB5461"}
+   :text-input {:style {:background-color "#FAFAFA"
+                        :color "#686963"
+                        :height 40
+                        :margin-top 10}}
+   :text-label {:style {:color "#DB5461"
+                        :margin-top 10}}
+   :text-output {:color "#000"}})
