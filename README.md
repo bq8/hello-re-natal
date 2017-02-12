@@ -1,14 +1,11 @@
 # hello-re-natal
 
-A Clojure library designed to ... well, that part is up to you.
+A basic calculator that tells you which combination of weights to put on the bar to approximately reach a target weight, performing conversions between kg/lb as needed.
 
 ## Usage
 
-FIXME
-
-## License
-
-Copyright © 2017 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+```
+$ re-natal use-figwheel
+$ react-native run-ios
+$ lein figwheel ios
+```
