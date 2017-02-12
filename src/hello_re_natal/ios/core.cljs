@@ -56,39 +56,27 @@
               (pos? (val x))) 
             (baz {} weight-set weight-per-side))))
 
-;;
-;;
-
 (defn app-root []
-  (let [greeting (subscribe [:get-greeting])
-        state (atom "")
-        desired-units (atom 0)
+  (let [text-input-state (atom "")
+        target-weight-state (atom 0)
         target-weight-unit (atom 0)
-        target-weight (atom 0)
+        barbell-type (atom 0)
         disc-unit (atom 0)]
     (fn []
-      [view {:style {:flex-direction "column"
-                     :padding 40
-                     :background-color "#2176ae"}} ;; 56cbf9
-       [text {:style {:font-size 30
-                      :font-weight "100"
-                      :margin-bottom 20
-                      :text-align "center"}} @greeting]
-       [image {:source logo-img
-               :style {:align-self "center"
-                       :width 80
-                       :height 80
-                       :margin-bottom 30}}]
+      [view {:style (get-in s/styles [:root-view])}
        [text {:style (get-in s/styles [:text-label])} "How much weight do you want to lift?"]
-      [text-input {:style {:height 40
-                           :color "#ff729f"}
-                   :keyboard-type "numeric"
-                   :on-change-text #(do
-                                      (reset! state %)
-                                      (r/flush))
-                   :placeholder "Weight"
-                   :return-key-type "done"
-                   :value @state}]
+       [text-input {:style (get-in s/styles [:text-input])
+                    :keyboard-type "numeric"
+                    :on-change-text #(do
+                                       (reset! text-input-state %)
+                                       (reset! target-weight-state 
+                                               (if (number? (read-string @text-input-state))
+                                                 @text-input-state
+                                                 nil))
+                                       (r/flush))
+                    :placeholder "Weight"
+                    :return-key-type "done"
+                    :value @text-input-state}]
        [segmented-control {:on-change #(do 
                                          (reset! target-weight-unit (-> % .-nativeEvent .-selectedSegmentIndex))
                                          ;; fixme: reset target weight here
@@ -97,20 +85,22 @@
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
                            :values ["kg", "lbs"]}]
        [text {:style (get-in s/styles [:text-label])} "What kind of bar do you have?"]
-       [segmented-control {:tint-color (get-in s/styles [:segmented-control :tint-color])
+       [segmented-control {:selected-index @barbell-type
+                           :tint-color (get-in s/styles [:segmented-control :tint-color])
                            :values ["Mens 20kg/44lb Olympic", "Womens 15kg/33lb Olympic"]}]
        [text {:style (get-in s/styles [:text-label])} "What kind of weights will you be using?"]
        [segmented-control {:on-change #(reset! disc-unit (-> % .-nativeEvent .-selectedSegmentIndex))
+                           :selected-index @disc-unit
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
                            :values ["kilogram discs", "pound discs"]}]
        [text {:style {:color "black"
                       :text-align "center"
-                      :font-weight "bold"}}
-                      (if (number? (read-string @state))
-                          (str (calc-weight @state 
+                      :font-weight "bold"}} 
+                      (if (number? (read-string @text-input-state))
+                          (str (calc-weight @target-weight-state
                                             (if (zero? @disc-unit) 20 45) 
                                             (if (zero? @disc-unit) kilogram-plates pound-plates)))
-                          (str "Not a number" @state (rand 10))
+                          (str "Not a number: " @text-input-state @target-weight-state)
                           )]])))
 
 (defn init []
