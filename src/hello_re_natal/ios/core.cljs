@@ -28,6 +28,9 @@
 (def pounds-per-kilogram 0.45359237)
 (defn to-pounds
   [weight]
+  (/ weight pounds-per-kilogram))
+(defn to-kilos
+  [weight]
   (* weight pounds-per-kilogram))
 
 (def barbell {:mens 20 :womens 15})
@@ -46,12 +49,22 @@
 
 ;; Calculates the number of discs required to reach a given weight, accounting for the bar.
 ;;
-;; target-weight the total weight on the bar
+;; target-weight the total weight on the bar. units should correspond to those used in weight-set
 ;; barbell-type 20kg or 45lbs
 ;; pound-plates or kilogram-plates
-(defn calc-weight 
-  [target-weight barbell-weight weight-set]
-  (let [weight-per-side (/ (- target-weight barbell-weight) 2)]
+(defn calc-weight [target-weight target-weight-unit barbell-type disc-unit]
+  (let [target-weight (cond
+                        (= target-weight-unit disc-unit) target-weight
+                        (zero? disc-unit) (to-kilos target-weight)
+                        :else (to-pounds target-weight))
+        barbell-weight (cond 
+                         (zero? disc-unit) (barbell (keyword barbell-type))
+                         :else (to-pounds (barbell (keyword barbell-type))))
+        weight-per-side (/ (- target-weight barbell-weight) 2)
+        weight-set (cond
+                     (zero? disc-unit) kilogram-plates
+                     :else pound-plates)]
+    (println target-weight barbell-weight weight-per-side weight-set)
     (filter (fn [x]
               (pos? (val x))) 
             (baz {} weight-set weight-per-side))))
@@ -78,9 +91,7 @@
                     :return-key-type "done"
                     :value @text-input-state}]
        [segmented-control {:on-change #(do 
-                                         (reset! target-weight-unit (-> % .-nativeEvent .-selectedSegmentIndex))
-                                         ;; fixme: reset target weight here
-                                         )
+                                         (reset! target-weight-unit (-> % .-nativeEvent .-selectedSegmentIndex)))
                            :selected-index @target-weight-unit
                            :tint-color (get-in s/styles [:segmented-control :tint-color])
                            :values ["kg", "lbs"]}]
@@ -97,9 +108,7 @@
                       :text-align "center"
                       :font-weight "bold"}} 
                       (if (number? (read-string @text-input-state))
-                          (str (calc-weight @target-weight-state
-                                            (if (zero? @disc-unit) 20 45) 
-                                            (if (zero? @disc-unit) kilogram-plates pound-plates)))
+                        (str (calc-weight @target-weight-state @target-weight-unit "mens" @disc-unit))
                           (str "Not a number: " @text-input-state @target-weight-state)
                           )]])))
 
