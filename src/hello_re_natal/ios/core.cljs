@@ -8,10 +8,16 @@
 
 (def ReactNative (js/require "react-native"))
 (def app-registry (.-AppRegistry ReactNative))
+(def dimensions (.-Dimensions ReactNative))
+(def segmented-control (r/adapt-react-class (.-SegmentedControlIOS ReactNative)))
 (def text (r/adapt-react-class (.-Text ReactNative)))
 (def text-input (r/adapt-react-class (.-TextInput ReactNative)))
 (def view (r/adapt-react-class (.-View ReactNative)))
-(def segmented-control (r/adapt-react-class (.-SegmentedControlIOS ReactNative)))
+
+;{:keys [width height]} (js->clj (.get dimensions "window") :keywordize-keys true)
+
+(defn get-dimensions [name]
+  (js->clj (.get dimensions name) :keywordize-keys true))
 
 (def pounds-per-kilogram 0.45359237)
 (defn to-pounds
@@ -52,9 +58,34 @@
         target-weight-state (atom 0)
         target-weight-unit-state (atom 0)
         barbell-type-state (atom 0)
-        disc-unit-state (atom 0)]
+        disc-unit-state (atom 0)
+        window-width (:width (get-dimensions "window"))
+        disc-decoration-width (* 0.3 window-width)]
     (fn []
       [view {:style (get-in s/styles [:root-view])}
+       [view {:style {:flex-direction "row"
+                      :flex-wrap "wrap"
+                      :justify-content "center"}}
+        [view {:style {:background-color "#FF595E"
+                       :border-radius (* 0.5 disc-decoration-width)
+                       :height disc-decoration-width
+                       :margin 5
+                       :width disc-decoration-width}}]
+        [view {:style {:background-color "#2176AE"
+                       :border-radius (* 0.5 disc-decoration-width)
+                       :height disc-decoration-width
+                       :margin 5
+                       :width disc-decoration-width}}]
+        [view {:style {:background-color "#F3D34A"
+                       :border-radius (* 0.5 disc-decoration-width)
+                       :height disc-decoration-width
+                       :margin 5
+                       :width disc-decoration-width}}]
+        [view {:style {:background-color "#76A530"
+                       :border-radius (* 0.5 disc-decoration-width)
+                       :height disc-decoration-width
+                       :margin 5
+                       :width disc-decoration-width}}]]
        [text {:style (get-in s/styles [:text-label :style])} "How much weight do you want to lift?"]
        [text-input {:style (get-in s/styles [:text-input :style])
                     :keyboard-type "numeric"
